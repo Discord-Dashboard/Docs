@@ -1,0 +1,221 @@
+---
+title: 'Guidelines and Process'
+description: 'Guidelines for contributing to Discord-Dashboard, including setup, submodule updates, and best practices for collaboration'
+---
+
+
+## Getting Started
+
+This document outlines the guidelines and procedures for contributing to our project on GitHub.
+Our project is organized with a main repository (`Workspace`) containing essential files and a packages directory with multiple
+submodules (e.g., `typings`, `core`, `react`, `base-theme`, etc.). Below, you’ll find steps for setting up the workspace, updating submodules, and ensuring
+the workspace reflects the latest versions of all submodules.
+
+<Info>
+    To make sure everything will be working as expected, please use the following versions of Yarn and Node.js for the contribution process:
+
+    - **Yarn**: 1.22.22
+    - **Node.js**: v20.16.0
+</Info>
+
+## Guidelines
+
+### General Principles
+
+- **Code Quality**: Ensure that all code is clean, well-documented, and adheres to the project’s coding standards.
+- **Commit Messages**: Use clear, concise commit messages. Reference related issues or features where applicable.
+- **Branching**: Always create a new branch for your changes. Use descriptive names (e.g., feature/new-theme, fix/bug-123).
+- **Pull Requests**: Submit PRs to the appropriate branch (usually develop or v3). Provide a detailed description of what the PR does.
+- **Reviews**: PRs require at least one approval before merging. Address all review comments before requesting a re-review.
+
+### Workflow
+
+- **Fork the Repository**: Start by forking the workspace repository to your GitHub account.
+- **Clone Your Fork**: Clone your forked repository to your local machine.
+- **Create a Branch**: Always create a new branch for your work.
+- **Commit Often**: Make frequent commits with descriptive messages.
+- **Keep Your Fork Up to Date**: Regularly sync your fork with the upstream repository to avoid merge conflicts.
+
+## Setting Up the Workspace
+
+<AccordionGroup>
+    <Accordion title="1. Clone the Workspace Repository">
+
+        First, clone the workspace repository to your local machine:
+
+        ```sh
+        git clone https://github.com/Discord-Dashboard/Workspace.git
+        cd Workspace
+        ```
+
+    </Accordion>
+
+    <Accordion title="2. Initialize and Update Submodules">
+
+        The `packages` directory contains all submodules. Initialize and update them with the following commands:
+
+        ```sh
+        git submodule update --init --recursive
+        ```
+
+    </Accordion>
+
+    <Accordion title="3. Install Dependencies">
+
+        After updating the submodules, install the dependencies for the entire workspace:
+
+        ```sh
+        yarn install
+        ```
+
+    </Accordion>
+
+    <Accordion title="4. Build All Packages">
+
+        To build all packages and keep listening to the changes, type:
+
+        ```sh
+        yarn run watch
+        ```
+
+    </Accordion>
+</AccordionGroup>
+
+## Updating Submodules and Workspace
+
+When a submodule (e.g., `core`) needs to be updated, please follow this:
+
+
+<AccordionGroup>
+    <Accordion title="1. Updating a Specific Submodule">
+
+       1. Navigate to the Submodule Directory:
+        ```sh
+        cd packages/core
+        ```
+
+        2. Checkout the Desired Branch (e.g., `main`):
+        ```sh
+        git checkout main
+        ```
+
+        3.	Pull the Latest Changes:
+        ```sh
+        git pull origin main
+        ```
+
+    </Accordion>
+
+    <Accordion title="2. Updating All Submodules">
+
+        To update all submodules to their latest versions:
+
+        ```sh
+        git submodule update --remote --merge
+        ```
+
+        This command fetches and merges the latest changes from the remote repositories of all submodules.
+
+    </Accordion>
+
+    <Accordion title="3. Committing Submodule Updates">
+
+        After updating the submodules, navigate back to the root of the workspace and commit the changes:
+
+        ```sh
+        cd ../..
+        git add packages/core
+        git commit -m "Updated core submodule to the latest version"
+        ```
+
+    </Accordion>
+
+    <Accordion title="4. Syncing the Main Workspace with Submodules">
+
+        To ensure the workspace reflects the latest changes from the submodules:
+
+        1. Navigate to the Workspace Root:
+        ```sh
+        cd /path/to/workspace
+        ```
+
+        2. Update All Submodules:
+        ```sh
+        git submodule update --remote --merge
+        ```
+
+        3. Test and Build: Ensure everything is up to date by running tests and rebuilding the workspace:
+        ```sh
+        yarn test
+        yarn build
+        ```
+
+        4. Commit changes:
+        ```sh
+        git add .
+        git commit -m "Updated workspace to reflect latest submodule changes"
+        git push origin your-branch
+        ```
+
+
+    </Accordion>
+
+    <Accordion title="5. Submitting Your Changes">
+
+        Once your changes are tested and ready:
+
+        1. Push Your Branch to your forked repository:
+        ```sh
+        git push origin your-branch
+        ```
+
+        2. Create a Pull Request: Go to the main repository on GitHub and create a PR from your branch.
+
+
+    </Accordion>
+
+</AccordionGroup>
+
+## Keeping Your Fork Updated
+
+<AccordionGroup>
+    <Accordion title="1. Fetch Upstream Changes">
+
+        To sync your fork with the upstream repository:
+        ```sh
+        git fetch upstream
+        git checkout main
+        git merge upstream/main
+        ```
+
+    </Accordion>
+
+    <Accordion title="2. Rebase Your Branch">
+
+        If you’re working on a feature branch:
+        ```sh
+        git checkout your-branch
+        git rebase main
+        ```
+
+    </Accordion>
+
+    <Accordion title="3. Force Push (if needed)">
+
+        If you’ve rebased:
+        ```sh
+        git push --force-with-lease origin your-branch
+        ```
+
+    </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+- **Regular Syncing**: Frequently sync your fork and branches with the upstream repository to avoid conflicts.
+- **Atomic Commits**: Make sure each commit is a complete, working change.
+- **Documentation**: Update documentation for any new features or changes to existing functionality.
+- **Testing**: Run all tests before pushing changes. Add new tests for any new features.
+
+By following these guidelines and procedures, you’ll ensure a smooth contribution process and help
+maintain the quality and consistency of the project. Happy coding!
