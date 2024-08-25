@@ -1,0 +1,57 @@
+---
+title: 'Text Input'
+description: 'Example of a TextInputBuilder for setting and validating a user-specific pet name'
+---
+
+<Info>
+    **Data Types Overview**
+
+    - **Input**: Accepts a `string` value.
+    - **Output**: Returns a `string` value.
+</Info>
+
+<CodeGroup>
+    ```ts TypeScript
+    import { FormOptionBuilders, ResponseStatusBuilders } from '@discord-dashboard/core';
+
+    let pet_names = {};
+    let default_pet_name = "Max";
+
+    export default new FormOptionBuilders.User.TextInputBuilder()
+        .setId('00_pet_name')
+        .onRequest(async (user_id) => {
+            return pet_names[user_id] || default_pet_name;
+        })
+        .onUpdate(async (user_id, value) => {
+            const regex = /^[A-Z][a-zA-Z]*(?:[- ][A-Z][a-zA-Z]*){0,1}$/;
+            if (!regex.test(value))
+                return ResponseStatusBuilders.SetResponses.Error("Name must start with a capital letter, contain only letters, and optionally include one hyphen or space between words.");
+
+            pet_names[user_id] = value;
+            return ResponseStatusBuilders.SetResponses.Ok();
+        })
+        .build();
+    ```
+
+    ```js JavaScript
+    const { FormOptionBuilders, ResponseStatusBuilders } = require('@discord-dashboard/core');
+
+    let pet_names = {};
+    let default_pet_name = "Max";
+
+    module.exports = new FormOptionBuilders.User.TextInputBuilder()
+        .setId('00_pet_name')
+        .onRequest(async (user_id) => {
+            return pet_names[user_id] || default_pet_name;
+        })
+        .onUpdate(async (user_id, value) => {
+            const regex = /^[A-Z][a-zA-Z]*(?:[- ][A-Z][a-zA-Z]*){0,1}$/;
+            if (!regex.test(value))
+                return ResponseStatusBuilders.SetResponses.Error("Name must start with a capital letter, contain only letters, and optionally include one hyphen or space between words.");
+
+            pet_names[user_id] = value;
+            return ResponseStatusBuilders.SetResponses.Ok();
+        })
+        .build();
+    ```
+</CodeGroup>

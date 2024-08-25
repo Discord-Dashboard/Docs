@@ -48,12 +48,23 @@
         "home/get-started/introduction"
       ]
     },
-
     {
       "group": "Get Started",
       "pages": [
         "v3/get-started/about",
         "v3/get-started/installation"
+      ]
+    },
+    {
+      "group": "Guild Form Option Builders",
+      "pages": [
+        "v3/guild-option-types/text-input"
+      ]
+    },
+    {
+      "group": "User Form Option Builders",
+      "pages": [
+        "v3/user-option-types/text-input"
       ]
     },
     {

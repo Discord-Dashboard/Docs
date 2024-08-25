@@ -1,0 +1,57 @@
+---
+title: 'Text Input'
+description: 'Example of a TextInputBuilder for setting and validating a command prefix in a Discord bot on a specific guild'
+---
+
+<Info>
+    **Data Types Overview**
+
+    - **Input**: Accepts a `string` value.
+    - **Output**: Returns a `string` value.
+</Info>
+
+<CodeGroup>
+    ```ts TypeScript
+    import { FormOptionBuilders, ResponseStatusBuilders } from '@discord-dashboard/core';
+
+    let prefixes = {};
+    let default_prefix = "!";
+
+    export default new FormOptionBuilders.Guild.TextInputBuilder()
+        .setId('00_prefix')
+        .onRequest(async (user_id, guild_id) => {
+            return prefixes[guild_id] || default_prefix;
+        })
+        .onUpdate(async (user_id, guild_id, value) => {
+            const regex = /^(?=.*[!@])[A-Za-z!@]{1,5}$/;
+            if (!regex.test(value))
+                return ResponseStatusBuilders.SetResponses.Error("Prefix must be 1-5 characters long and contain at least one special character (! or @).");
+
+            prefixes[guild_id] = value;
+            return ResponseStatusBuilders.SetResponses.Ok();
+        })
+        .build();
+    ```
+
+    ```js JavaScript
+    const { FormOptionBuilders, ResponseStatusBuilders } = require('@discord-dashboard/core');
+
+    let prefixes = {};
+    let default_prefix = "!";
+
+    module.exports = new FormOptionBuilders.Guild.TextInputBuilder()
+        .setId('00_prefix')
+        .onRequest(async (user_id, guild_id) => {
+            return prefixes[guild_id] || default_prefix;
+        })
+        .onUpdate(async (user_id, guild_id, value) => {
+            const regex = /^(?=.*[!@])[A-Za-z!@]{1,5}$/;
+            if (!regex.test(value))
+                return ResponseStatusBuilders.SetResponses.Error("Prefix must be 1-5 characters long and contain at least one special character (! or @).");
+
+            prefixes[guild_id] = value;
+            return ResponseStatusBuilders.SetResponses.Ok();
+        })
+        .build();
+    ```
+</CodeGroup>
