@@ -19,6 +19,8 @@ description: 'Example of a TextInputBuilder for setting and validating a user-sp
 
     export default new FormOptionBuilders.User.TextInputBuilder()
         .setId('00_pet_name')
+        .setName("Pet name")
+        .setDescription("Your pet's name")
         .onRequest(async (user_id) => {
             return pet_names[user_id] || default_pet_name;
         })
@@ -41,6 +43,8 @@ description: 'Example of a TextInputBuilder for setting and validating a user-sp
 
     module.exports = new FormOptionBuilders.User.TextInputBuilder()
         .setId('00_pet_name')
+        .setName("Pet name")
+        .setDescription("Your pet's name")
         .onRequest(async (user_id) => {
             return pet_names[user_id] || default_pet_name;
         })

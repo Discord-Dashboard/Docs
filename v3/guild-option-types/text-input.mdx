@@ -19,6 +19,8 @@ description: 'Example of a TextInputBuilder for setting and validating a command
 
     export default new FormOptionBuilders.Guild.TextInputBuilder()
         .setId('00_prefix')
+        .setName("Prefix")
+        .setDescription("Prefix of the bot for this guild")
         .onRequest(async (user_id, guild_id) => {
             return prefixes[guild_id] || default_prefix;
         })
@@ -41,6 +43,8 @@ description: 'Example of a TextInputBuilder for setting and validating a command
 
     module.exports = new FormOptionBuilders.Guild.TextInputBuilder()
         .setId('00_prefix')
+        .setName("Prefix")
+        .setDescription("Prefix of the bot for this guild")
         .onRequest(async (user_id, guild_id) => {
             return prefixes[guild_id] || default_prefix;
         })
