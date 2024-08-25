@@ -1,0 +1,107 @@
+---
+title: 'Installation'
+description: 'Learn how to install and configure the Discord-Dashboard project, including dependencies and environment setup for local development'
+---
+
+<Info>
+    The minimal requirement for Discord-Dashboard is **Node.js 18.18.0 or higher**.
+</Info>
+
+## Prerequisites
+
+Before you begin, ensure that you have the following installed on your system:
+
+- **Node.js**: Make sure you have Node.js installed. You can [download it from the official website](https://nodejs.org/en/download/package-manager).
+- **Package Manager**: You can use your preferred package manager.
+This documentation will provide commands for `npm`, `yarn` and `pnpm`.
+
+## Installation
+
+<AccordionGroup>
+    <Accordion title="Step 1: Install the CLI">
+
+        To create a new Discord-Dashboard project, start by using our dedicated CLI tool. This tool will guide you through the setup process, allowing you to quickly scaffold a new project with all the necessary configurations.
+
+        First, ensure that you have the CLI installed globally:
+
+        <CodeGroup>
+
+            ```sh Yarn
+            yarn global add @discord-dashboard/cli
+            ```
+
+            ```sh NPM
+            npm install -g @discord-dashboard/cli
+            ```
+
+            ```sh PNPM
+            pnpm add -g @discord-dashboard/cli
+            ```
+
+        </CodeGroup>
+
+    </Accordion>
+
+    <Accordion title="Step 2: Create a Project">
+
+        Once the CLI is installed, you can create your project by running the following command:
+
+        ```sh
+        discord-dashboard init
+        ```
+
+        The CLI will guide you through a series of questions to help set up your new project,
+        creating a configuration file and initializing the project with basic features tailored to your needs.
+        Answer them or simply keep them default for now:
+
+        ![CLI Setup](/images/v3/installation-and-setup/installation/CLI_setup.png) # img to be changed
+
+    </Accordion>
+
+    <Accordion title="Step 3: Create the .env File">
+
+        After the CLI completes, it will output a sample `.env` file containing a custom-generated session secret.
+        Please copy this content and paste it into a new `.env` file in your project directory.
+
+        <Warning>
+            Update the default Discord OAuth2 Client ID, Secret, and Assistants Technologies Token with your own values. [How to do it?](soon)
+        </Warning>
+    </Accordion>
+
+    <Accordion title="Step 4: Import the Instance">
+
+        Next, you will need to import the Discord-Dashboard instance in your main application file.
+        This instance can be found in the `discord-dashboard/instance.{js,ts}` file.
+
+        <CodeGroup>
+
+            ```ts TypeScript
+            import dashboard from './discord-dashboard/instance';
+
+            dashboard.start()
+                .then((instance) => {
+                    console.log("Discord-Dashboard Instance is Up and Running!");
+                });
+            ```
+
+            Or, if you prefer using dynamic imports:
+
+            ```js JavaScript
+            const dashboard = require('./discord-dashboard/instance');
+
+            dashboard.start()
+                .then((instance) => {
+                    console.log("Discord-Dashboard Instance is Up and Running!");
+                });
+            ```
+
+        </CodeGroup>
+
+    </Accordion>
+
+    <Accordion title="Step 5: Run the Project">
+
+        Finally, you can run your project and access the application in your web browser!
+
+    </Accordion>
+</AccordionGroup>

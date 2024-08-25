@@ -48,6 +48,14 @@
         "home/get-started/introduction"
       ]
     },
+
+    {
+      "group": "Get Started",
+      "pages": [
+        "v3/get-started/about",
+        "v3/get-started/installation"
+      ]
+    },
     {
       "group": "Contribution",
       "pages": [
