@@ -1,0 +1,145 @@
+---
+title: Quickstart
+description: Create a bot with a working dashboard, from zero, in about five minutes.
+---
+
+You need Node.js 20.6 or later and a Discord account.
+
+<Steps>
+  <Step title="Create a Discord application">
+    Open the [Discord Developer Portal](https://discord.com/developers/applications)
+    and click **New Application**.
+
+    1. On **OAuth2**, copy the **Client ID** and reset and copy the **Client Secret**.
+    2. Still on **OAuth2**, under **Redirects**, add
+       `http://localhost:3001/api/auth/discord/callback` and save.
+    3. On **Bot**, reset and copy the **Token**.
+    4. Invite the bot to a test server. On **OAuth2 > URL Generator**, tick the
+       `bot` scope, open the generated URL and pick your server.
+
+    <Warning>
+      The redirect has to match exactly, including the port and the path. A
+      mismatch is the most common reason login fails.
+    </Warning>
+  </Step>
+
+  <Step title="Scaffold the project">
+    ```bash
+    npm init @asctane-dashboard my-bot
+    cd my-bot
+    npm install
+    ```
+
+    This creates a small discord.js bot with a dashboard: `index.js`,
+    `package.json`, `.env.example` and `.gitignore`. Secrets are read from the
+    environment and are never written into the source.
+  </Step>
+
+  <Step title="Add your secrets">
+    Copy `.env.example` to `.env` and fill it in:
+
+    ```bash .env
+    DISCORD_CLIENT_ID=your client id
+    DISCORD_CLIENT_SECRET=your client secret
+    BOT_TOKEN=your bot token
+    COOKIE_SECRET=any random string of 32 characters or more
+    ```
+
+    Generate a cookie secret with
+    `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+  </Step>
+
+  <Step title="Start it">
+    ```bash
+    npm start
+    ```
+
+    Open [http://localhost:3001](http://localhost:3001), click **Log in**,
+    approve the Discord prompt and pick your server. You can now change the
+    bot's prefix from the browser.
+  </Step>
+</Steps>
+
+## What the starter contains
+
+```js index.js
+import { Client, GatewayIntentBits } from "discord.js"
+import { createDashboard, defineSettings, f } from "asctane-dashboard"
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds] })
+
+const settings = defineSettings((s) => ({
+  general: s.category({
+    name: "General",
+    options: { prefix: f.text({ label: "Prefix", max: 3, default: "!" }) },
+  }),
+}))
+
+const dash = createDashboard({
+  client,
+  discord: {
+    clientId: process.env.DISCORD_CLIENT_ID,
+    clientSecret: process.env.DISCORD_CLIENT_SECRET,
+  },
+  settings,
+})
+
+await client.login(process.env.BOT_TOKEN)
+await dash.listen(3001)
+console.log("Dashboard running on http://localhost:3001")
+```
+
+- `defineSettings` describes the settings. Each category becomes a section in
+  the dashboard and each option becomes a form field.
+- `createDashboard` wires up login, the settings API and the web app. Passing
+  your discord.js `client` lets the dashboard list live channels and roles.
+- `dash.listen(3001)` serves the dashboard pages and the API on one port.
+
+## Use a setting in your bot
+
+Read a value with `dash.get(serverId, "category.option")`. A setting nobody has
+changed yet returns its `default`.
+
+```js
+client.on("messageCreate", async (message) => {
+  if (!message.guildId) return
+  const prefix = await dash.get(message.guildId, "general.prefix")
+  if (message.content === `${prefix}ping`) await message.reply("pong")
+})
+```
+
+Reading messages needs the `GuildMessages` and `MessageContent` intents, and the
+Message Content intent switched on under **Bot** in the Developer Portal.
+
+<Tip>
+  Settings live in memory by default and are lost on restart. Add
+  `storage: "sqlite"` to `createDashboard` to keep them in a local file. See
+  [Lite mode](/guides/lite-mode#storage).
+</Tip>
+
+## Before the packages are on npm
+
+During the beta you can build the packages from the repository and install the
+tarballs into your project:
+
+```bash
+git clone https://github.com/Discord-Dashboard/Core.git
+cd Core
+pnpm install
+pnpm build
+pnpm smoke:pack --out ../packs
+node packages/create/bin.js ../my-bot
+cd ../my-bot
+npm install ../packs/*.tgz
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Settings and fields" icon="sliders" href="/guides/settings">
+    Categories, every field type, translations and defaults.
+  </Card>
+  <Card title="Going to production" icon="server" href="/guides/production">
+    Your own domain, HTTPS and a strong secret.
+  </Card>
+</CardGroup>

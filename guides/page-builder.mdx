@@ -1,0 +1,80 @@
+---
+title: Page builder
+description: Build public pages for your bot with drag and drop, with optional AI generation.
+---
+
+The builder at `/builder/` lets chosen people make pages such as a landing page,
+a command list or a status page, without writing code. Published pages are
+public at `/p/?slug=<slug>`.
+
+## Who can edit
+
+Nobody, until you say so. In lite mode, list the Discord user ids that may edit:
+
+```js
+createDashboard({ /* ... */ pageEditors: ["123456789012345678"] })
+```
+
+For your own server, pass `canEditPages: (session) => ...` to `buildServer`. It
+gets the logged in session, with `userId` and `platform`, and returns whether
+that user may edit.
+
+## Pages are data
+
+A page is JSON, never HTML or code. It is a tree of blocks of these types:
+`Hero`, `Heading`, `Text`, `Button`, `Card`, `Grid`, `SettingsPanel`, `Image`,
+`Divider`, `Spacer` and `List`. The server checks every save against that list
+and refuses unknown blocks and unsafe links, such as `javascript:` URLs, so a
+page can't inject markup or scripts.
+
+Each save is a new version. A page starts as a draft and goes live when it is
+saved as published. Editors can list a page's versions and restore an old one.
+
+## AI generation
+
+Give the dashboard an LLM client and editors can describe a page in words and
+get a draft back:
+
+```js
+import { httpLlm } from "@asctane-dashboard/builder"
+
+createDashboard({
+  /* ... */
+  pageEditors: ["123456789012345678"],
+  ai: httpLlm({
+    endpoint: process.env.LLM_ENDPOINT,
+    apiKey: process.env.LLM_API_KEY,
+    model: process.env.LLM_MODEL,
+  }),
+})
+```
+
+`httpLlm` posts `{ model, prompt, catalog }` to your endpoint with the key as a
+bearer token and expects `{ "output": "<page JSON>" }` back. Put a small proxy in
+front of the model provider you use. For anything else, an LLM client is an
+object with one method:
+
+```js
+const ai = {
+  async complete(prompt, catalog) {
+    // Return the page as a JSON string, using only the block types in catalog.
+  },
+}
+```
+
+The result is validated exactly like a hand made page and saved as a draft, so a
+person always reviews it before it goes live. Generation is limited to 20
+requests a minute.
+
+## API
+
+| Method | Path | Who |
+| --- | --- | --- |
+| `GET` | `/api/pages` | Anyone: the published slugs. |
+| `GET` | `/api/pages/:slug` | Anyone: a published page. |
+| `GET` | `/api/pages/:slug/draft` | Editors: the latest version, draft or not. |
+| `POST` | `/api/pages/:slug` | Editors: save `{ content, status }`, where status is `draft` or `published`. |
+| `POST` | `/api/pages/:slug/generate` | Editors: `{ intent }` in, a draft out. |
+| `GET` | `/api/pages/:slug/history` | Editors: the versions, newest first. |
+| `POST` | `/api/pages/:slug/restore` | Editors: `{ version }`. |
+| `DELETE` | `/api/pages/:slug` | Editors. |

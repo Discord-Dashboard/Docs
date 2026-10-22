@@ -1,0 +1,50 @@
+---
+title: Introduction
+description: An open source web dashboard for your Discord bot, driven by a settings schema.
+---
+
+asctane-dashboard gives your bot a web dashboard where server admins log in with
+Discord, pick a server and change your bot's settings. You describe the settings
+once as a schema. The dashboard renders the forms, validates every value on the
+server and hands the result to your bot.
+
+<Note>
+  v3 is in beta. The packages are published to npm when the public beta starts.
+  Until then you can run everything from the
+  [Core repository](https://github.com/Discord-Dashboard/Core).
+</Note>
+
+## What you get
+
+- **Login and permissions.** Discord OAuth with PKCE. A user only sees the
+  servers they own or can manage (the Manage Server permission).
+- **Forms from a schema.** Text, numbers, switches, selects, channel and role
+  pickers, colors, lists, embeds and more. See [Fields](/reference/fields).
+- **Two ways to connect a bot.** Run the dashboard inside your discord.js
+  process ([lite mode](/guides/lite-mode)), or connect a bot in any language over
+  a small WebSocket protocol ([remote bots](/guides/remote-bots)).
+- **A web app that ships prebuilt.** The dashboard pages are served on the same
+  port as the API, so there is nothing else to build or host.
+- **Live updates.** Admins editing the same server see each other's changes.
+- **A page builder.** Drag and drop public pages for your bot, with optional AI
+  generation.
+- **Secure by default.** Origin checks on every state change, rate limits,
+  security headers, and a refusal to start in production with a weak secret.
+
+## How v3 differs from v2
+
+v3 is a rewrite. It is MIT licensed with no license server and no obfuscated
+code, the settings are a declarative schema instead of callbacks per option, and
+the web app is a separate prebuilt package instead of EJS themes. If you run a v2
+dashboard today, read [Migrating from v2](/migration/from-v2).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    A running dashboard in about five minutes.
+  </Card>
+  <Card title="How it works" icon="diagram-project" href="/how-it-works">
+    Spaces, platforms, adapters and the one port setup.
+  </Card>
+</CardGroup>

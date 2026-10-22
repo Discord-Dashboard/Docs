@@ -1,32 +1,28 @@
-# Mintlify Starter Kit
+# asctane-dashboard docs
 
-Click on `Use this template` to copy the Mintlify starter kit. The starter kit contains examples including
+The documentation for asctane-dashboard v3, built with [Mintlify](https://mintlify.com).
+The code lives in [Discord-Dashboard/Core](https://github.com/Discord-Dashboard/Core).
 
-- Guide pages
-- Navigation
-- Customizations
-- API Reference pages
-- Use of popular components
+## Preview locally
 
-### Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mintlify) to preview the documentation changes locally. To install, use the following command
-
-```
-npm i -g mintlify
+```bash
+npx mint dev
 ```
 
-Run the following command at the root of your documentation (where mint.json is)
+Then open http://localhost:3000. Before opening a pull request, run:
 
+```bash
+npx mint validate
+npx mint broken-links
 ```
-mintlify dev
-```
 
-### Publishing Changes
+## Layout
 
-Install our Github App to auto propagate changes from your repo to your deployment. Changes will be deployed to production automatically after pushing to the default branch. Find the link to install on your dashboard. 
+- `docs.json`: the site config and navigation.
+- `introduction.mdx`, `quickstart.mdx`, `how-it-works.mdx`: getting started.
+- `guides/`: settings, lite mode, remote bots, the web app, modules, the page
+  builder and production.
+- `reference/`: fields, configuration, the HTTP API, the protocol and packages.
+- `migration/`: moving from v2.
 
-#### Troubleshooting
-
-- Mintlify dev isn't running - Run `mintlify install` it'll re-install dependencies.
-- Page loads as a 404 - Make sure you are running in a folder with `mint.json`
+When a pull request in Core changes behavior, update the page that describes it.

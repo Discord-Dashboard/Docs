@@ -1,0 +1,145 @@
+---
+title: Settings and fields
+description: Describe your bot's settings once, and get the forms, the validation and the storage keys from it.
+---
+
+Settings are a schema. `defineSettings` takes a function that returns your
+categories, and each category holds options built with the field helpers in `f`.
+
+```js
+import { defineSettings, f } from "asctane-dashboard"
+
+export const settings = defineSettings((s) => ({
+  general: s.category({
+    name: "General",
+    description: "The basics.",
+    icon: "settings",
+    options: {
+      prefix: f.text({ label: "Prefix", max: 3, default: "!" }),
+      language: f.select({
+        label: "Language",
+        options: { en: "English", nl: "Nederlands" },
+        default: "en",
+      }),
+    },
+  }),
+  moderation: s.category({
+    name: "Moderation",
+    options: {
+      logChannel: f.channel({ label: "Log channel", types: ["text"] }),
+      modRoles: f.roleMulti({ label: "Moderator roles", hideHigher: true }),
+      timeout: f.duration({ label: "Default timeout", default: "10m" }),
+    },
+  }),
+}))
+```
+
+## Keys
+
+Every option has a key made of its category id and its option id, joined with a
+dot: `general.prefix`, `moderation.logChannel`. You use the key to read a value
+in your bot and the API uses it in its URLs. Pick ids you are happy to keep,
+because renaming one points the dashboard at a new, empty setting.
+
+## Categories
+
+| Option | Type | What it does |
+| --- | --- | --- |
+| `name` | text or translations | The section title. Required. |
+| `description` | text or translations | A line under the title. |
+| `icon` | string | An icon name, passed to the web app with the schema. |
+| `entitlement` | string | Only spaces with this entitlement can change the options. See [Entitlements](#entitlements). |
+| `options` | object | The fields, by option id. |
+
+## Fields
+
+Every field takes these common options:
+
+| Option | Type | What it does |
+| --- | --- | --- |
+| `label` | text or translations | The field's label. |
+| `description` | text or translations | Help text under the label. |
+| `required` | boolean | Reject an empty value. |
+| `default` | depends on the field | The value before anyone changes it. |
+| `entitlement` | string | Gate this one field instead of the whole category. |
+| `ui` | object | Hints passed through to the web app. |
+
+The full list of field types and their own options is in the
+[field reference](/reference/fields). In short:
+
+| Helper | Value |
+| --- | --- |
+| `f.text`, `f.textarea` | string |
+| `f.number` | number |
+| `f.switch`, `f.checkbox` | boolean |
+| `f.select` | one of the option keys |
+| `f.multiSelect` | array of option keys |
+| `f.channel`, `f.role` | an id |
+| `f.channelMulti`, `f.roleMulti` | an array of ids |
+| `f.ref(kind)` | an id, or ids with `multiple: true` |
+| `f.color` | a color string such as `#5865f2` |
+| `f.url` | an `http` or `https` URL |
+| `f.duration` | a number and a unit: `30s`, `10m`, `2h`, `7d` |
+| `f.list(item)` | an array of the item's value |
+| `f.embed` | a Discord embed object |
+
+<Note>
+  Import `f` from `asctane-dashboard` or `@asctane-dashboard/platform-discord`
+  in a Discord bot. That version types the channel and role pickers for Discord
+  (`types`, `hideNsfw`, `hideHigher`, `includeBots`) and adds `f.embed`. The
+  `f` in `@asctane-dashboard/schema` is the platform neutral base.
+</Note>
+
+## Validation
+
+Each field carries a [Zod](https://zod.dev) type built from its options, for
+example `f.text({ max: 3 })` only accepts strings of up to three characters. The
+server checks every write against it and answers `400` with the reason when a
+value does not fit, before your bot ever sees it.
+
+## Translations
+
+Any `label`, `description` or category `name` can be a map of locale to text
+instead of a plain string:
+
+```js
+f.text({
+  label: { en: "Prefix", nl: "Voorvoegsel" },
+  description: { en: "Up to three characters.", nl: "Maximaal drie tekens." },
+})
+```
+
+`GET /api/schema?locale=nl` returns the Dutch text. A missing locale falls back
+to `en`, and then to the first translation.
+
+## Entitlements
+
+Set `entitlement` on a category or a field to keep it for spaces that have
+unlocked it, for example a premium tier sold through Discord SKUs or Stripe.
+Without the entitlement the server refuses writes to it with
+`entitlement required`. A space's entitlements are listed at
+`GET /api/spaces/discord/<id>/entitlements`.
+
+```js
+premium: s.category({
+  name: "Premium",
+  entitlement: "pro",
+  options: { welcomeImage: f.url({ label: "Welcome image" }) },
+}),
+```
+
+## Custom field types
+
+A platform or a module can add its own field type with `defineField`, which
+takes a type name, a Zod type and the options that go to the web app:
+
+```js
+import { defineField } from "@asctane-dashboard/schema"
+import { z } from "zod"
+
+const emoji = (opts = {}) => defineField("emoji", z.string().max(64).optional(), opts)
+```
+
+The web app renders an unknown type as a text input. To give it a real input,
+build the web app yourself with your widget added. See
+[Your own build](/guides/web-app#your-own-build).

@@ -1,0 +1,58 @@
+---
+title: Configuration
+description: Environment variables and server options.
+---
+
+## Environment variables
+
+| Variable | Used by | Default | What it does |
+| --- | --- | --- | --- |
+| `COOKIE_SECRET` | all | `change-me-in-production` | Signs the session cookie. Production needs 32 characters or more. |
+| `ALLOWED_ORIGINS` | all | lite mode: the dashboard's own origin | Comma separated origins allowed to make changes. Login returns to the first one. |
+| `NODE_ENV` | all | none | `production` turns on secure cookies and the startup checks. |
+| `WEBHOOK_SECRET` | all | none | Verifies billing webhooks. Warned about in production when missing. |
+| `DISCORD_CLIENT_ID` | starter, remote server | none | Your Discord application's client id. |
+| `DISCORD_CLIENT_SECRET` | starter, remote server | none | Its client secret. |
+| `BOT_TOKEN` | starter | none | The bot's token, for `client.login`. |
+| `BOT_ID` | remote | none | The id the bot connects with. |
+| `DASHBOARD_SECRET` | remote | none | The secret the bot signs its handshake with. Use a long random value. |
+
+The starter and the remote server example read the Discord values from the
+environment themselves. `createDashboard` takes them as options, so you can load
+them any way you like.
+
+## `createDashboard` options
+
+See [Lite mode](/guides/lite-mode#options).
+
+## `buildServer(config, deps)`
+
+The engine behind both modes, from `@asctane-dashboard/core`.
+
+`config`:
+
+| Field | Type | What it does |
+| --- | --- | --- |
+| `port` | number | The port, for messages and defaults. `listen` takes the real one. |
+| `cookieSecret` | string | Signs the session cookie. |
+| `allowedOrigins` | string[] | Origins allowed to make changes. Login returns to the first. |
+| `platforms` | Platform[] | Login providers, such as `discord({ clientId, clientSecret, redirectUri })`. |
+| `rateLimit` | `{ max, timeWindow }` | Defaults to 100 requests a minute. |
+| `webhookSecret` | string | Verifies billing webhooks. |
+
+`deps`:
+
+| Field | What it does |
+| --- | --- |
+| `def` | The settings schema, or a function returning it. |
+| `adapter` | How the server reaches the bot: `InProcessAdapter`, `RemoteAdapter` or your own. |
+| `web` | `{ root }` to serve a static web app on the same port. |
+| `canEditPages` | `(session) => boolean`. Who may edit builder pages. Defaults to nobody. |
+| `pages` | Where builder pages are kept. Defaults to memory. |
+| `llm` | An LLM client for page generation. |
+| `events`, `stats`, `audit`, `sessions` | Replace the built in hubs and stores, for example to share them. |
+| `botAccess` | `(session, botId) => boolean`. Who may read a bot's stats. Defaults to nobody. |
+| `ready` | `() => boolean`. What `/ready` reports. |
+| `metrics` | `() => Record<string, number>`. Extra gauges for `/metrics`. |
+
+`buildServer` returns a Fastify instance. Call `listen({ port, host })` on it.

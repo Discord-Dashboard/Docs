@@ -1,0 +1,63 @@
+---
+title: HTTP API
+description: The routes the web app uses, for your own client or tooling.
+---
+
+Every route lives under `/api` except the probes. Responses are JSON. Errors
+look like `{ "error": "..." }` with a matching status code. The server also
+describes itself at `GET /api/openapi.json`.
+
+Routes marked **session** need the session cookie from logging in. Routes under
+a space also need the user to be allowed to manage that space, or they answer
+`403`. Changes (`POST`, `DELETE`) must come from the dashboard's own origin or
+an allowed origin.
+
+## Auth
+
+| Method | Path | |
+| --- | --- | --- |
+| `GET` | `/api/platforms` | The platforms you can log in with: `{ platforms: [{ id, name }] }`. |
+| `GET` | `/api/auth/:platform` | Starts login. Redirects to the platform, for example Discord. |
+| `GET` | `/api/auth/:platform/callback` | Where the platform sends the user back. Redirects to the first allowed origin. |
+| `GET` | `/api/auth/me` | **session.** `{ id, username, avatar }`. |
+| `GET` | `/api/spaces` | **session.** `{ platform, spaces: [{ id, name, icon }] }`, the spaces the user may manage. |
+| `POST` | `/api/auth/logout` | Ends the session. |
+
+## Schema and settings
+
+`:platform` is the platform id (`discord`) and `:spaceId` the server id.
+
+| Method | Path | |
+| --- | --- | --- |
+| `GET` | `/api/schema?locale=en` | The settings schema in [wire format](/reference/protocol#schema). |
+| `GET` | `/api/spaces/:platform/:spaceId/values` | **session.** `{ values: { "general.prefix": "!" } }`, with defaults filled in. |
+| `GET` | `/api/spaces/:platform/:spaceId/settings/:category/:option` | **session.** `{ value }`. |
+| `POST` | `/api/spaces/:platform/:spaceId/settings/:category/:option` | **session.** Body `{ value }`. `400` with the reason when the value is invalid. |
+| `GET` | `/api/spaces/:platform/:spaceId/resources/:kind?filter=` | **session.** Picker items: `{ items: [{ label, value }] }`. `filter` is the field's filter as JSON. |
+| `POST` | `/api/spaces/:platform/:spaceId/actions/:name` | **session.** Runs a bot action with the body as its payload: `{ result }`. |
+| `GET` | `/api/spaces/:platform/:spaceId/audit` | **session.** Recent changes: `{ entries: [{ userId, key, value, at }] }`. |
+| `GET` | `/api/spaces/:platform/:spaceId/entitlements` | **session.** `{ entitlements: { pro: false } }`. |
+| `GET` | `/api/spaces/:platform/:spaceId/stream` | **session.** Server sent events, one `setting.changed` per change. |
+
+## Pages
+
+See [Page builder](/guides/page-builder#api).
+
+## Webhooks
+
+`POST /api/webhooks/:platform` and `POST /api/webhooks/stripe` take purchase
+events and turn them into entitlements. They skip the origin check and need the
+`x-webhook-secret` header to equal `WEBHOOK_SECRET`.
+
+<Note>
+  Billing is experimental in the beta and its routes may change.
+</Note>
+
+## Other
+
+| Method | Path | |
+| --- | --- | --- |
+| `GET` | `/api/version` | `{ protocol: "2.0.0" }`. |
+| `GET` | `/api/openapi.json` | An OpenAPI 3.1 list of the routes. |
+| `GET` | `/api/bots/:botId/stats` | **session.** A bot's last `stats.push`, when `botAccess` allows it. |
+| `GET` | `/health`, `/ready`, `/metrics` | Probes. See [Going to production](/guides/production#health-checks). |

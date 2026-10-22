@@ -1,0 +1,118 @@
+---
+title: Lite mode
+description: Run the dashboard inside your discord.js bot with one call.
+---
+
+Lite mode puts the dashboard in the same process as your bot. It is the
+`asctane-dashboard` package and needs nothing else: no separate server, no
+database server and no license.
+
+```bash
+npm install asctane-dashboard discord.js
+```
+
+```js
+import { Client, GatewayIntentBits } from "discord.js"
+import { createDashboard, defineSettings, f } from "asctane-dashboard"
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds] })
+
+const dash = createDashboard({
+  client,
+  discord: {
+    clientId: process.env.DISCORD_CLIENT_ID,
+    clientSecret: process.env.DISCORD_CLIENT_SECRET,
+  },
+  settings: defineSettings((s) => ({
+    general: s.category({
+      name: "General",
+      options: {
+        prefix: f.text({ label: "Prefix", max: 3, default: "!" }),
+        welcomeChannel: f.channel({ label: "Welcome channel", types: ["text"] }),
+      },
+    }),
+  })),
+  storage: "sqlite",
+})
+
+await client.login(process.env.BOT_TOKEN)
+await dash.listen(3001)
+```
+
+## Options
+
+| Option | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `discord` | object | required | `clientId`, `clientSecret` and an optional `redirectUri`. |
+| `settings` | schema | required | The result of `defineSettings`. |
+| `client` | discord.js `Client` | none | Lists live channels and roles for the pickers and checks member permissions. Without it the pickers are empty. |
+| `storage` | `"memory"`, `"sqlite"` or a store | `"memory"` | Where values are kept. See [Storage](#storage). |
+| `sqlitePath` | string | `data.sqlite` | The database file when `storage` is `"sqlite"`. |
+| `port` | number | `3001` | The port `listen()` uses when you pass none. |
+| `pageEditors` | string[] | `[]` | Discord user ids that may edit builder pages. Empty keeps the editor closed. |
+| `ai` | LLM client | none | Turns on AI page generation. See [Page builder](/guides/page-builder). |
+| `web` | `{ root }` or `false` | the prebuilt app | The web app to serve. See [The web app](/guides/web-app). |
+
+`redirectUri` defaults to `http://localhost:<port>/api/auth/discord/callback`.
+Set it when the dashboard is reached on any other address, and register the
+same URL on your Discord application.
+
+## Reading settings
+
+`dash.get(spaceId, key)` returns a server's value for a key, or the field's
+`default` when nobody has set it.
+
+```js
+client.on("guildMemberAdd", async (member) => {
+  const channelId = await dash.get(member.guild.id, "general.welcomeChannel")
+  if (!channelId) return
+  const channel = member.guild.channels.cache.get(channelId)
+  await channel?.send(`Welcome, ${member}!`)
+})
+```
+
+Values are read from the store on every call, so a change in the dashboard is
+used right away.
+
+## Storage
+
+- `"memory"` keeps values in the process. They are gone after a restart, which
+  is fine while you try things out.
+- `"sqlite"` keeps them in a local SQLite file (`sqlitePath`). This is the
+  simplest durable choice for a single bot.
+- Your own store is any object with `get(key)` and `set(key, value)`, sync or
+  async. Use it to keep settings in the database your bot already has.
+
+```js
+const store = {
+  async get(key) {
+    const row = await db.settings.findUnique({ where: { key } })
+    return row ? JSON.parse(row.value) : undefined
+  },
+  async set(key, value) {
+    const json = JSON.stringify(value)
+    await db.settings.upsert({ where: { key }, create: { key, value: json }, update: { value: json } })
+  },
+}
+
+createDashboard({ /* ... */ storage: store })
+```
+
+The store's keys are `<spaceId>:<category>.<option>`, for example
+`123456789012345678:general.prefix`.
+
+<Note>
+  Lite mode keeps builder pages and the audit log in memory. For several bots,
+  or to keep those as well, run the dashboard as its own server. See
+  [Remote bots](/guides/remote-bots).
+</Note>
+
+## Environment variables
+
+| Variable | What it does |
+| --- | --- |
+| `COOKIE_SECRET` | Signs the session cookie. Required in production, 32 characters or more. |
+| `ALLOWED_ORIGINS` | Comma separated origins allowed to make changes. Defaults to the dashboard's own origin. |
+| `NODE_ENV` | `production` turns on the startup checks. |
+
+See [Configuration](/reference/configuration) for everything else.

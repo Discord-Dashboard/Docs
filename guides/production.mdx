@@ -1,0 +1,92 @@
+---
+title: Going to production
+description: A domain, HTTPS, secrets and the checks the server runs before it starts.
+---
+
+## Checklist
+
+<Steps>
+  <Step title="Set NODE_ENV=production">
+    This turns on secure (HTTPS only) cookies and the startup checks below.
+  </Step>
+  <Step title="Use a strong COOKIE_SECRET">
+    At least 32 random characters. The server refuses to start in production
+    without one. Keep it out of your repository.
+  </Step>
+  <Step title="Serve over HTTPS">
+    Put the dashboard behind a reverse proxy that terminates TLS, such as Caddy,
+    nginx or a Cloudflare tunnel. Secure cookies are not sent over plain HTTP, so
+    login doesn't stick without HTTPS.
+  </Step>
+  <Step title="Point Discord at your domain">
+    Set the redirect to your public URL, both in your code and under **OAuth2 >
+    Redirects** in the Developer Portal:
+
+    ```js
+    createDashboard({
+      discord: {
+        clientId: process.env.DISCORD_CLIENT_ID,
+        clientSecret: process.env.DISCORD_CLIENT_SECRET,
+        redirectUri: "https://dash.example.com/api/auth/discord/callback",
+      },
+      // ...
+    })
+    ```
+
+    The dashboard's allowed origin follows the redirect, here
+    `https://dash.example.com`, so login returns to your domain.
+  </Step>
+  <Step title="Keep settings on disk">
+    Use `storage: "sqlite"` or your own store. The default memory store is
+    emptied on every restart.
+  </Step>
+</Steps>
+
+## Reverse proxy
+
+Forward everything to the dashboard's port and keep the original `Host` header.
+The server accepts a change from the page it served by comparing the request's
+`Origin` with its `Host`.
+
+```nginx
+server {
+  server_name dash.example.com;
+  location / {
+    proxy_pass http://127.0.0.1:3001;
+    proxy_set_header Host $host;
+    # Only for remote mode, when the bot gateway shares this host:
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+}
+```
+
+With Caddy, `reverse_proxy 127.0.0.1:3001` does all of this.
+
+If your proxy rewrites `Host`, list the public origin in `ALLOWED_ORIGINS`
+instead.
+
+## Health checks
+
+| Path | Answers |
+| --- | --- |
+| `/health` | `200` while the process runs. |
+| `/ready` | `200` when ready, `503` before. A remote server is ready once its bot is connected. |
+| `/metrics` | Prometheus gauges: `dd_up`, `dd_sessions` and, in remote mode, `dd_bots_connected`. |
+
+## What is protected
+
+- **Login** uses OAuth with PKCE and a state check, and the session lives in an
+  `httpOnly`, `SameSite=Lax` cookie.
+- **Every change** (`POST`, `PUT`, `PATCH`, `DELETE`) must come from the
+  dashboard's own origin or an allowed one. Webhooks are exempt and checked
+  with `WEBHOOK_SECRET` instead.
+- **Every request** is rate limited, 100 a minute per client by default.
+  Request bodies are capped at 256 KB.
+- **Headers** come from Helmet: a Content Security Policy, `nosniff`, HSTS and
+  more.
+- **Errors** never leak internals: the client gets `{ "error": "internal error" }`
+  and the details go to the log.
+- **Spaces**: a user can only read or change servers they could manage at
+  login.

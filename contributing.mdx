@@ -1,0 +1,60 @@
+---
+title: Contributing
+description: Work on asctane-dashboard itself.
+---
+
+Everything for v3 lives in one monorepo,
+[Discord-Dashboard/Core](https://github.com/Discord-Dashboard/Core), on its
+default branch `v3`. These docs live in
+[Discord-Dashboard/Docs](https://github.com/Discord-Dashboard/Docs). The
+organization's
+[contributing guide](https://github.com/Discord-Dashboard/.github/blob/main/CONTRIBUTING.md)
+covers finding work, pull requests and conduct.
+
+## Setup
+
+You need Node.js 20 or later, pnpm 9 and, for the Python SDK, Python 3.10 or
+later.
+
+```bash
+git clone https://github.com/Discord-Dashboard/Core.git
+cd Core
+pnpm install
+pnpm build
+```
+
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Runs every package in watch mode, with the web app on port 3000. |
+| `pnpm test` | The TypeScript tests (Vitest). |
+| `cd packages/sdk-py && python -m pytest -q` | The Python SDK's tests. |
+| `pnpm typecheck` | Type checks every package. |
+| `pnpm lint` | Lints every package. |
+| `pnpm smoke:pack` | Packs every package, installs the tarballs into an empty project and imports them. |
+
+CI runs all of these on every pull request.
+
+## Layout
+
+- `packages/` holds the libraries: core, schema, protocol, the SDKs, the
+  platform, the builder, the UI and the modules.
+- `apps/web` is the web app, published prebuilt as `@asctane-dashboard/web`.
+- `apps/server` is a standalone server for development.
+- `meta/asctane-dashboard` is the lite mode package.
+- `examples/` holds example bots in Node and Python.
+
+The protocol and schema packages are the source of truth. Change them first,
+then core, the web app and both SDKs.
+
+## Pull requests
+
+- Branch from `v3` and keep each pull request to one change.
+- Use a [Conventional Commits](https://www.conventionalcommits.org) title, such
+  as `feat(schema): add a date field` or `fix(core): ...`.
+- Add or update tests, and update these docs when behavior changes.
+- Pull requests are squash merged once CI is green.
+
+## v2
+
+v2 lives on the `v2` branch of Core and is still published as
+`discord-dashboard`. Fixes for v2 go there.

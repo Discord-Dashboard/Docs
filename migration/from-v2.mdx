@@ -1,0 +1,197 @@
+---
+title: Migrating from v2
+description: Move a discord-dashboard v2 bot to v3, either in one step with the compatibility layer or option by option.
+---
+
+v3 replaces v2's callbacks per option with a settings schema, its EJS themes
+with a prebuilt web app, and its license with MIT. There are two ways over:
+
+<CardGroup cols={2}>
+  <Card title="Keep your v2 settings array" icon="bolt" href="#option-a-the-compatibility-layer">
+    `@asctane-dashboard/compat-v2` runs your existing `settings` array,
+    `getActualSet` and `setNew` included. The quickest way to v3.
+  </Card>
+  <Card title="Rewrite as a schema" icon="list-check" href="#option-b-rewrite-as-a-schema">
+    Move each option to a v3 field and keep values in a store. More work, and
+    you get validation, defaults and everything below.
+  </Card>
+</CardGroup>
+
+You can start with the first and move categories over one at a time.
+
+## What maps to what
+
+| v2 | v3 |
+| --- | --- |
+| `npm i discord-dashboard` | `npm i asctane-dashboard` |
+| `DBD.useLicense(...)` | Nothing. v3 has no license. |
+| `new DBD.Dashboard({...})` and `.init()` | `createDashboard({...})` and `await dash.listen(port)` |
+| `client: { id, secret }` | `discord: { clientId, clientSecret }` |
+| `redirectUri`, `domain`, `port` | `discord.redirectUri` and the port passed to `listen` |
+| `bot: client` | `client` |
+| `settings: [categories]` | `settings: defineSettings(...)` |
+| `categoryId`, `categoryName`, `categoryDescription` | The category's key, `name` and `description` |
+| `optionId`, `optionName`, `optionDescription` | The option's key, `label` and `description` |
+| `optionType: DBD.formTypes.*` | A field from `f`. See the table below. |
+| `getActualSet({ guild })` | `dash.get(guildId, "category.option")` in your bot, or your store's `get` |
+| `setNew({ guild, newData })` | Nothing to write: the dashboard validates and stores the value. Or your store's `set` |
+| `theme: SoftUI({...})` and other theme packages | The built in web app. See [The web app](/guides/web-app). |
+| `useUnderMaintenance` | Not built in. |
+| `SSL: { enabled, key, cert }` | A reverse proxy in front. See [Going to production](/guides/production). |
+| `/discord` login route | `/api/auth/discord`, callback `/api/auth/discord/callback` |
+
+### Form types
+
+| v2 `formTypes` | v3 field |
+| --- | --- |
+| `input(placeholder, min, max)` | `f.text({ min, max })` |
+| `textarea(placeholder, min, max)` | `f.textarea({ min, max })` |
+| `select({ Label: "value" })` | `f.select({ options: { value: "Label" } })` |
+| `multiSelect({ Label: "value" })` | `f.multiSelect({ options: { value: "Label" } })` |
+| `switch()`, `checkbox()` | `f.switch()`, `f.checkbox()` |
+| `channelsSelect(disabled, types)` | `f.channel({ types })` |
+| `channelsMultiSelect(...)` | `f.channelMulti({ types })` |
+| `rolesSelect(disabled, includeBots, hideHigher)` | `f.role({ includeBots, hideHigher })` |
+| `rolesMultiSelect(...)` | `f.roleMulti({ includeBots, hideHigher })` |
+| `colorSelect(default)` | `f.color({ default })` |
+| `embedBuilder(default)` | `f.embed({ default })` |
+
+<Warning>
+  The select lists are the other way round. v2 took `{ "English": "en" }`,
+  label first. v3 takes `{ en: "English" }`: the stored value is the key.
+</Warning>
+
+v2's channel types were discord.js v13 names such as `GUILD_TEXT`. v3 uses
+`text`, `voice`, `category`, `announcement`, `thread`, `stage`, `forum` and
+`media`.
+
+## Option A: the compatibility layer
+
+`fromV2` turns a v2 settings array into a v3 schema and an adapter that calls
+your `getActualSet` and `setNew`. Pass both to `createDashboard`:
+
+```bash
+npm uninstall discord-dashboard
+npm install asctane-dashboard @asctane-dashboard/compat-v2
+```
+
+```js
+import { createDashboard } from "asctane-dashboard"
+import { fromV2 } from "@asctane-dashboard/compat-v2"
+import { discordSourceFromClient } from "@asctane-dashboard/platform-discord"
+import { settings as v2Settings } from "./dashboard-settings.js" // your v2 array, unchanged
+
+const { def, adapter } = fromV2(v2Settings, { source: discordSourceFromClient(client) })
+
+const dash = createDashboard({
+  client,
+  discord: {
+    clientId: process.env.DISCORD_CLIENT_ID,
+    clientSecret: process.env.DISCORD_CLIENT_SECRET,
+  },
+  settings: def,
+  adapter,
+})
+
+await client.login(process.env.BOT_TOKEN)
+await dash.listen(3001)
+```
+
+- Your callbacks get the same `{ guild: { id }, user: { id }, newData }`
+  objects as before. `guild` and `user` only carry an `id`, so look anything else
+  up through your client.
+- The `source` gives the channel and role pickers live data from your client.
+  They list every channel or role: v2 kept a picker's channel types inside a
+  function, so they can't be carried over. Move the option to `f.channel({ types })`
+  to filter again.
+- Form types are mapped as in the table above, select lists included. An option
+  type compat-v2 doesn't know becomes a text field.
+- `allowedCheck`, `themeOptions` and `disabled` are ignored.
+
+Then update your Discord application's redirect to
+`http://localhost:3001/api/auth/discord/callback` (or your domain), since the
+path changed.
+
+## Option B: rewrite as a schema
+
+Here is a typical v2 option:
+
+```js v2
+{
+  categoryId: "setup",
+  categoryName: "Setup",
+  categoryDescription: "Set up the bot",
+  categoryOptionsList: [
+    {
+      optionId: "lang",
+      optionName: "Language",
+      optionDescription: "The bot's language",
+      optionType: DBD.formTypes.select({ Polish: "pl", English: "en" }),
+      getActualSet: async ({ guild }) => langsSettings[guild.id] || null,
+      setNew: async ({ guild, newData }) => {
+        langsSettings[guild.id] = newData
+      },
+    },
+  ],
+}
+```
+
+In v3 the option is a field, and the reading and writing move to a store:
+
+```js v3
+const settings = defineSettings((s) => ({
+  setup: s.category({
+    name: "Setup",
+    description: "Set up the bot",
+    options: {
+      lang: f.select({
+        label: "Language",
+        description: "The bot's language",
+        options: { pl: "Polish", en: "English" },
+        default: "en",
+      }),
+    },
+  }),
+}))
+
+const dash = createDashboard({ client, discord, settings, storage: "sqlite" })
+
+// Wherever the bot used langsSettings[guild.id]:
+const lang = await dash.get(guild.id, "setup.lang")
+```
+
+To keep the data you already have, pass your own store instead of `"sqlite"`
+and read from it in the `{ get, set }` shape described in
+[Lite mode](/guides/lite-mode#storage). The keys are
+`<guildId>:<category>.<option>`, so `setup.lang` for this option.
+
+## Themes
+
+v2 themes were packages that rendered the pages on the server. v3's pages are a
+static app that only talks to the API, which keeps the bot's data out of the
+templates and means a dashboard update can't break your theme. The built in
+themes are switched from the header. For a different look, build the web app
+from source and serve it with `web: { root }`. See
+[Your own build](/guides/web-app#your-own-build).
+
+## Checklist
+
+<Steps>
+  <Step title="Swap the packages">
+    Remove `discord-dashboard` and its theme. Install `asctane-dashboard`, plus
+    `@asctane-dashboard/compat-v2` for option A.
+  </Step>
+  <Step title="Replace the setup">
+    `createDashboard` instead of `new DBD.Dashboard`, and no `useLicense`.
+  </Step>
+  <Step title="Move the settings">
+    Through `fromV2`, or field by field.
+  </Step>
+  <Step title="Update the Discord redirect">
+    `/api/auth/discord/callback` on your dashboard's address.
+  </Step>
+  <Step title="Set the production secrets">
+    `NODE_ENV=production` and a 32 character `COOKIE_SECRET`. See
+    [Going to production](/guides/production).
+  </Step>
+</Steps>
