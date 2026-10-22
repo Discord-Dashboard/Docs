@@ -1,0 +1,159 @@
+---
+title: Protocol
+description: The WebSocket protocol between the dashboard and a remote bot, for writing an adapter in any language.
+---
+
+The Node and Python SDKs implement this protocol. You only need this page to
+write an adapter in another language. The current version is **2.0.0**, and the
+gateway only accepts bots with the same major version.
+
+## Transport
+
+The bot opens a WebSocket to the gateway's `/gateway` path, such as
+`ws://localhost:3002/gateway` or `wss://dash.example.com/gateway`. Every message
+is one JSON text frame. After the handshake both sides speak
+[JSON-RPC 2.0](https://www.jsonrpc.org/specification), and either side may send
+requests.
+
+## Handshake
+
+1. The gateway sends a challenge as soon as the socket opens:
+
+   ```json
+   { "type": "challenge", "nonce": "9f2c...", "protocolVersion": "2.0.0" }
+   ```
+
+2. The bot signs the nonce with its shared secret, as a hex HMAC-SHA256, and
+   answers with `hello`:
+
+   ```json
+   {
+     "jsonrpc": "2.0",
+     "id": "hello",
+     "method": "hello",
+     "params": {
+       "protocolVersion": "2.0.0",
+       "botId": "my-bot",
+       "nonceSig": "<hex hmac_sha256(secret, nonce)>",
+       "capabilities": []
+     }
+   }
+   ```
+
+3. When the signature checks out, the gateway answers with a session:
+
+   ```json
+   { "jsonrpc": "2.0", "id": "hello", "result": { "sessionId": "…", "heartbeatMs": 30000 } }
+   ```
+
+A bot that doesn't send a valid `hello` within 10 seconds is disconnected. A
+newer connection with the same bot id replaces the old one.
+
+The gateway sends a WebSocket ping every `heartbeatMs` and drops a connection
+that hasn't answered the previous one. WebSocket libraries answer pings for you.
+
+## Close codes
+
+| Code | Meaning |
+| --- | --- |
+| `4400` | Protocol major version mismatch. |
+| `4401` | Unknown bot id or bad signature. |
+| `4403` | Forbidden. |
+| `4404` | Space not found. |
+| `4429` | Rate limited. |
+
+## Methods the dashboard calls
+
+The bot answers each request with a `result`, or with an `error` object
+(`{ code, message }`) using the JSON-RPC codes. Calls time out after 10 seconds.
+Every space call also carries `platform`, such as `"discord"`, and changes carry
+`actor: { userId }`.
+
+| Method | Params | Result |
+| --- | --- | --- |
+| `settings.describe` | `{ locale? }` | The [schema](#schema). |
+| `setting.get` | `{ spaceId, key }` | `{ value }`. Use `null` for unset; the dashboard applies the default. |
+| `setting.set` | `{ spaceId, key, value }` | `{ ok: true }`, or `{ ok: false, error }`. The value is already validated. |
+| `space.resources` | `{ spaceId, kind, filter? }` | `[{ label, value }]` for a picker, such as channels or roles. |
+| `space.member.permissions` | `{ spaceId, userId }` | `{ permissions: ["MANAGE_GUILD", ...] }`. |
+| `action.invoke` | `{ spaceId, name, payload? }` | Any JSON. |
+
+Keys are `category.option`, for example `general.prefix`.
+
+## Events
+
+The bot sends these as JSON-RPC notifications, with no `id`:
+
+| Method | Params |
+| --- | --- |
+| `setting.changed` | `{ spaceId, key, value }`. A value changed in the bot; open forms update. |
+| `space.updated` | `{ spaceId }`. Something in the space changed, such as its channels. |
+| `stats.push` | `{ guilds, users }`. |
+| `module.event` | `{ module, event, payload? }`. A module specific event. |
+
+## Schema
+
+`settings.describe` returns the settings in wire format, version `1.0`:
+
+```json
+{
+  "version": "1.0",
+  "categories": [
+    {
+      "id": "general",
+      "name": "General",
+      "options": [
+        { "id": "prefix", "type": "text", "label": "Prefix", "max": 3, "default": "!" },
+        { "id": "language", "type": "select", "enum": [{ "value": "en", "label": "English" }] },
+        { "id": "logChannel", "type": "ref", "kind": "channel", "filter": { "types": ["text"] } }
+      ]
+    }
+  ]
+}
+```
+
+A category has `id`, `name` and `options`, and may have `description`, `icon`
+and `entitlement`. An option has `id` and `type` plus the field options listed in
+the [field reference](/reference/fields#wire-format). The dashboard rebuilds its
+validation from this, so a value that doesn't fit is refused before it reaches
+your bot.
+
+## Example
+
+A complete minimal adapter, in Node without the SDK:
+
+```js
+import crypto from "node:crypto"
+import WebSocket from "ws"
+
+const store = new Map()
+const ws = new WebSocket("ws://localhost:3002/gateway")
+const send = (frame) => ws.send(JSON.stringify(frame))
+
+ws.on("message", (raw) => {
+  const frame = JSON.parse(raw)
+  if (frame.type === "challenge") {
+    const nonceSig = crypto.createHmac("sha256", process.env.DASHBOARD_SECRET).update(frame.nonce).digest("hex")
+    return send({
+      jsonrpc: "2.0",
+      id: "hello",
+      method: "hello",
+      params: { protocolVersion: "2.0.0", botId: process.env.BOT_ID, nonceSig, capabilities: [] },
+    })
+  }
+  if (!frame.method || frame.id === undefined) return
+  const { spaceId, key, value } = frame.params ?? {}
+  let result = {}
+  if (frame.method === "settings.describe") {
+    result = { version: "1.0", categories: [{ id: "general", name: "General", options: [{ id: "prefix", type: "text" }] }] }
+  } else if (frame.method === "setting.get") {
+    result = { value: store.get(`${spaceId}:${key}`) ?? null }
+  } else if (frame.method === "setting.set") {
+    store.set(`${spaceId}:${key}`, value)
+    result = { ok: true }
+  } else if (frame.method === "space.resources") {
+    result = []
+  }
+  send({ jsonrpc: "2.0", id: frame.id, result })
+})
+```

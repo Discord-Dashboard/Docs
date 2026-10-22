@@ -1,0 +1,37 @@
+---
+title: Packages
+description: What each package does, and which ones you need.
+---
+
+All packages share one version and are released together.
+
+| You want | Install |
+| --- | --- |
+| A dashboard inside a discord.js bot | `asctane-dashboard` |
+| A new project with everything set up | `npm init @asctane-dashboard` |
+| A dashboard server for a remote bot | `@asctane-dashboard/core`, `@asctane-dashboard/platform-discord`, `@asctane-dashboard/web` |
+| To connect a Node bot to that server | `@asctane-dashboard/sdk-js` |
+| To connect a Python bot | `discord-dashboard` on PyPI |
+
+## All packages
+
+| Package | Role |
+| --- | --- |
+| `asctane-dashboard` | Lite mode: `createDashboard`, `defineSettings` and Discord's `f`. |
+| `@asctane-dashboard/create` | The project scaffolder behind `npm init @asctane-dashboard`. |
+| `@asctane-dashboard/core` | The engine: HTTP API, OAuth, the bot gateway, settings, entitlements. |
+| `@asctane-dashboard/web` | The prebuilt web app. Exports `webRoot`, the folder to serve. |
+| `@asctane-dashboard/platform-discord` | Discord login, the server list, discord.js pickers, embeds and SKU purchases. |
+| `@asctane-dashboard/schema` | `defineSettings`, the platform neutral `f`, `defineField` and the wire format. |
+| `@asctane-dashboard/protocol` | The protocol's types and constants. The source of truth for SDKs. |
+| `@asctane-dashboard/sdk-js` | The Node bot adapter. |
+| `@asctane-dashboard/builder` | The page builder's schema, the Puck config and AI generation. |
+| `@asctane-dashboard/ui` | The React component library the web app is built from. |
+| `@asctane-dashboard/theme-default` | The default theme's tokens. |
+| `@asctane-dashboard/db` | SQLite storage (Drizzle), used by `storage: "sqlite"`. |
+| `@asctane-dashboard/compat-v2` | Runs a v2 settings array on v3. See [Migrating from v2](/migration/from-v2). |
+| `@asctane-dashboard/marketplace` | The module and theme registry. |
+| `@asctane-dashboard/modules` | All reference modules plus `composeModules`, `modulesFor` and `canRun`. |
+| `@asctane-dashboard/module-*` | The reference modules one by one. See [Modules](/guides/modules). |
+
+The Python SDK is `discord-dashboard` on PyPI and imports as `discord_dashboard`.

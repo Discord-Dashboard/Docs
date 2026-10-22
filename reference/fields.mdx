@@ -1,0 +1,138 @@
+---
+title: Fields
+description: Every field type, its options, the value it stores and how the dashboard shows it.
+---
+
+All fields take the common options `label`, `description`, `required`,
+`default`, `entitlement` and `ui`. See [Settings and fields](/guides/settings#fields).
+
+## Text and numbers
+
+### `f.text`
+
+A single line of text. The value is a string.
+
+| Option | Type | |
+| --- | --- | --- |
+| `min` | number | Minimum length. |
+| `max` | number | Maximum length. |
+| `default` | string | |
+
+```js
+prefix: f.text({ label: "Prefix", max: 3, default: "!" })
+```
+
+### `f.textarea`
+
+Several lines of text. The value is a string. Takes `min` and `max`.
+
+### `f.number`
+
+A number input. The value is a number.
+
+| Option | Type | |
+| --- | --- | --- |
+| `min` | number | Smallest allowed value. |
+| `max` | number | Largest allowed value. |
+| `default` | number | |
+
+### `f.url`
+
+A URL. Only `http://` and `https://` URLs are accepted.
+
+### `f.duration`
+
+A length of time written as a whole number and a unit: `s`, `m`, `h` or `d`,
+for example `30s`, `10m` or `7d`. The value is that string.
+
+### `f.color`
+
+A color picker. The value is a hex color such as `#5865f2`.
+
+## Choices
+
+### `f.switch` and `f.checkbox`
+
+An on or off toggle. The value is a boolean and defaults to `false`. A `default`
+given as a string such as `"false"` or `"0"` counts as false.
+
+### `f.select`
+
+One choice out of a fixed list. `options` maps each stored value to its label,
+and only those keys are accepted.
+
+```js
+f.select({ label: "Language", options: { en: "English", nl: "Nederlands" }, default: "en" })
+```
+
+### `f.multiSelect`
+
+Several choices out of a fixed list. Same `options` as `f.select`. The value is
+an array of the chosen keys.
+
+## Discord pickers
+
+These list live channels and roles from the bot. In lite mode that needs the
+discord.js `client` passed to `createDashboard`, and in remote mode the bot
+answers `space.resources`.
+
+### `f.channel` and `f.channelMulti`
+
+Pick one channel (the value is its id) or several (an array of ids).
+
+| Option | Type | |
+| --- | --- | --- |
+| `types` | array | Only these kinds: `text`, `voice`, `category`, `announcement`, `thread`, `stage`, `forum`, `media`. |
+| `hideNsfw` | boolean | Leave out age restricted channels. |
+| `onlyNsfw` | boolean | Only list age restricted channels. |
+
+```js
+logChannel: f.channel({ label: "Log channel", types: ["text", "announcement"] })
+```
+
+### `f.role` and `f.roleMulti`
+
+Pick one role or several.
+
+| Option | Type | |
+| --- | --- | --- |
+| `hideHigher` | boolean | Leave out roles above the bot's own, which it could not assign. |
+| `includeBots` | boolean | Include roles managed by an integration, such as other bots' roles. |
+
+### `f.ref`
+
+The general form of a picker, for any resource kind a platform lists:
+
+```js
+f.ref("channel", { multiple: true, filter: { types: ["text"] } })
+```
+
+`multiple: true` stores an array of ids. `filter` is passed to the platform as
+is. `f.channel` and `f.role` are shortcuts for `f.ref`.
+
+### `f.embed`
+
+A Discord message embed editor for the title, the description and the color.
+The value is an embed object, saved whole on every change.
+
+## Lists
+
+### `f.list`
+
+A list of values of one type. Pass the item field first.
+
+```js
+bannedWords: f.list(f.text(), { label: "Banned words", max: 50 })
+```
+
+The dashboard shows one entry per line. The value is an array of the item's
+values, and every entry is validated as the item field.
+
+## Wire format
+
+Remote bots send their schema as JSON instead of JavaScript. Each option is an
+object with an `id` and a `type`, plus the options above: `label`,
+`description`, `required`, `default`, `min`, `max`, `kind`, `multiple`,
+`filter`, `item`, `entitlement` and `ui`. `select` and `multiSelect` carry their
+choices as `enum: [{ "value": "en", "label": "English" }]`. See
+[Protocol](/reference/protocol#schema).

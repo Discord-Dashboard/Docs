@@ -1,0 +1,93 @@
+---
+title: Modules
+description: Ready made feature settings you can combine with your own.
+---
+
+A module is a feature's settings packaged for reuse: an id, a name and a
+settings schema. v3 ships seven reference modules:
+
+| Module | Package | Needs |
+| --- | --- | --- |
+| Leveling | `@asctane-dashboard/module-leveling` | channels, roles |
+| Automod | `@asctane-dashboard/module-automod` | channels |
+| Tickets | `@asctane-dashboard/module-tickets` | channels, roles, Discord only |
+| Giveaways | `@asctane-dashboard/module-giveaways` | channels, roles |
+| Onboarding | `@asctane-dashboard/module-onboarding` | channels, roles |
+| Reaction roles | `@asctane-dashboard/module-reaction-roles` | channels, roles, Discord only |
+| Autoresponder | `@asctane-dashboard/module-autoresponder` | channels |
+
+`@asctane-dashboard/modules` re-exports all of them as `modules`, together with
+the helpers below. A module describes settings only. Your bot still implements
+the feature and reads the values like any other setting.
+
+## Combining modules
+
+`composeModules` merges the modules' categories into one schema that you pass to
+`createDashboard`:
+
+```js
+import { createDashboard } from "asctane-dashboard"
+import { composeModules } from "@asctane-dashboard/modules"
+import { leveling } from "@asctane-dashboard/module-leveling"
+import { tickets } from "@asctane-dashboard/module-tickets"
+
+const dash = createDashboard({
+  client,
+  discord: { clientId, clientSecret },
+  settings: composeModules([leveling, tickets]),
+})
+
+// Leveling's options live in its "leveling" category.
+const xp = await dash.get(guildId, "leveling.xpPerMessage")
+```
+
+To add your own settings next to them, compose a module of your own:
+
+```js
+const mine = { id: "mine", name: "Mine", settings: mySettings }
+composeModules([leveling, tickets, mine])
+```
+
+Category ids must be unique across the modules. A clash throws at startup instead
+of silently dropping settings.
+
+## Platform support
+
+A module can say which resource kinds it picks (`requires`, such as
+`["channel", "role"]`) and which platforms it runs on (`platforms`). Pass a
+platform to `composeModules` to leave out the modules it can't run:
+
+```js
+import { discord } from "@asctane-dashboard/platform-discord"
+
+composeModules(modules, { platform: discord({ clientId, clientSecret, redirectUri }) })
+```
+
+`modulesFor(modules, platform)` returns the usable modules, and
+`canRun(module, platform)` checks one.
+
+## Writing a module
+
+```js
+import { defineSettings } from "@asctane-dashboard/schema"
+
+export const starboard = {
+  id: "starboard",
+  name: "Starboard",
+  requires: ["channel"],
+  settings: defineSettings((s, f) => ({
+    starboard: s.category({
+      name: "Starboard",
+      icon: "star",
+      options: {
+        channel: f.ref("channel", { label: "Starboard channel", filter: { types: ["text"] } }),
+        threshold: f.number({ label: "Stars needed", min: 1, max: 50, default: 3 }),
+      },
+    }),
+  })),
+}
+```
+
+`defineSettings` passes the field helpers as its second argument, so a module
+needs no platform package and works on any platform that has the resources it
+needs.

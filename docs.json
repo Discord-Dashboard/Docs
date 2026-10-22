@@ -1,0 +1,75 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "asctane-dashboard",
+  "colors": {
+    "primary": "#0D9373",
+    "light": "#07C983",
+    "dark": "#0D9373"
+  },
+  "favicon": "/favicon.svg",
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "https://discord.gg/6Yv5U9V3ux"
+      }
+    ],
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/Discord-Dashboard/Core"
+    }
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get started",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "how-it-works"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/settings",
+          "guides/lite-mode",
+          "guides/remote-bots",
+          "guides/web-app",
+          "guides/modules",
+          "guides/page-builder",
+          "guides/production"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "reference/fields",
+          "reference/configuration",
+          "reference/http-api",
+          "reference/protocol",
+          "reference/packages"
+        ]
+      },
+      {
+        "group": "Migrating",
+        "pages": [
+          "migration/from-v2"
+        ]
+      },
+      {
+        "group": "Project",
+        "pages": [
+          "contributing"
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/Discord-Dashboard",
+      "discord": "https://discord.gg/6Yv5U9V3ux"
+    }
+  }
+}

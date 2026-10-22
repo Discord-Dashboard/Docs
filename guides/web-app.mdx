@@ -1,0 +1,68 @@
+---
+title: The web app
+description: How the dashboard pages are served, how to turn them off, and how to ship your own build.
+---
+
+The dashboard's pages are the `@asctane-dashboard/web` package: a prebuilt,
+static export of a Next.js app. `asctane-dashboard` depends on it and serves it
+on the same port as the API, so there is nothing to build or host separately.
+
+| Page | Path |
+| --- | --- |
+| Landing page | `/` |
+| Login | `/login/` |
+| Server list | `/manage/` |
+| A server's settings | `/dashboard/?platform=discord&space=<id>` |
+| Page builder | `/builder/` |
+| A public builder page | `/p/?slug=<slug>` |
+
+The pages call the API on their own origin, so no CORS setup is needed. The
+theme menu in the header switches between the built in themes (Default,
+Midnight, Aurora and Daylight) for each visitor.
+
+## Turning it off
+
+Serve only the API, for example when the pages are hosted somewhere else:
+
+```js
+createDashboard({ /* ... */ web: false })
+```
+
+Add the origin the pages are served from to `ALLOWED_ORIGINS`, and put it first:
+after login the user is sent to the first allowed origin.
+
+## Your own build
+
+To change the pages themselves, build the app from the
+[Core repository](https://github.com/Discord-Dashboard/Core) and point the
+dashboard at the result:
+
+```bash
+git clone https://github.com/Discord-Dashboard/Core.git
+cd Core
+pnpm install
+# edit apps/web
+pnpm --filter @asctane-dashboard/web build
+```
+
+```js
+createDashboard({ /* ... */ web: { root: "/path/to/Core/apps/web/out" } })
+```
+
+Any folder of static files works as `root`. A route is served from
+`<route>/index.html`, or `<route>.html` in a flat export, and an unknown page
+gets `404.html`.
+
+## Developing the web app
+
+`pnpm --filter @asctane-dashboard/web dev` starts Next.js on port 3000 with hot
+reload and forwards `/api` to a dashboard on port 3001 (set `API_URL` to change
+that). Run the dashboard with `ALLOWED_ORIGINS=http://localhost:3000` so login
+returns to the dev server.
+
+## Security headers
+
+When the web app is served, the server's Content Security Policy allows the
+pages' inline scripts and images from any `https:` source, such as Discord
+avatars. Everything else stays on the strict defaults: scripts, frames and API
+calls only from the dashboard's own origin.
